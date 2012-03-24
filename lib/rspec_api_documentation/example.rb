@@ -45,5 +45,9 @@ module RspecApiDocumentation
     def requests
       metadata[:requests] || []
     end
+
+    def api_path
+      example_group[:description]
+    end
   end
 end

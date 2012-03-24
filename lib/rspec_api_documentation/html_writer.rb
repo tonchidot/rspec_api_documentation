@@ -66,8 +66,8 @@ module RspecApiDocumentation
     end
 
     def filename
-      basename = description.downcase.gsub(/\s+/, '_').gsub(/[^a-z_]/, '')
-      "#{basename}.html"
+      basename = description.downcase.gsub(/[\s+\/\.\?&:#=]/, '_')
+      "#{ basename}.html"
     end
 
     def requests
@@ -77,6 +77,7 @@ module RspecApiDocumentation
         else
           hash[:curl] = nil
         end
+        hash[:response_body_json] = JSON.pretty_generate JSON.parse(hash[:response_body])
         hash
       end
     end
