@@ -114,8 +114,87 @@ module RspecApiDocumentation
       end
     end
 
+    def is_multipart(string)
+      return /^--/ === string
+    end
+
+    def is_boundary(lines, n, boundary)
+      n >= lines.length || lines[n] == boundary || lines[n] == boundary + "--"
+    end
+
+    def convert_binary_to_safe(string)
+      state = :begin
+      current_is_binary = false
+
+      buffer = []
+      lines = string.split(/\r\n|\n|\r/)
+      boundary = lines.first
+      n = 0
+      while n < lines.length
+        begin
+          line = lines[n]
+          eat_line = true
+
+          # in boundary line
+          if state == :begin
+            if line == boundary
+              state = :header
+              current_is_binary = false
+
+            # end of data
+            elsif line == boundary + "--"
+              break
+
+            else
+              raise "invalid begin state, lines[#{n}]: #{lines[n].inspect}"
+            end
+
+          # in header lines
+          elsif state == :header
+            # content-type
+            if !(m = line.match(/^content-type\s*:\s*([-\w]+)\/[-\w]+$/i)).nil?
+              current_is_binary = (m[1] != "text") ? true : false
+
+            # end of headers
+            elsif line == ""
+              state = :body
+            end
+
+          # in body lines
+          elsif state == :body
+            # current content is binary
+            if current_is_binary
+              eat_line = false
+              buffer << "{ Put binary contents that you want to upload }"
+              # skip to next boundary
+              while !is_boundary(lines, n+1, boundary)
+                n += 1
+              end
+              state = :begin
+
+            # current content is text
+            else
+              # boundary found
+              if is_boundary(lines, n+1, boundary)
+                state = :begin
+              end
+            end
+
+          else
+            raise "invalid state, lines[#{n}]: #{lines[n].inspect}"
+          end
+
+        ensure
+          n += 1
+          buffer << line if eat_line
+        end
+      end
+      buffer.join("\n")
+    end
+
     def prettify_request_body(string)
       return if string.blank?
+      return convert_binary_to_safe(string) if is_multipart(string)
       CGI.unescape(string.split("&").join("\n"))
     end
 
