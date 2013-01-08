@@ -163,7 +163,8 @@ module RspecApiDocumentation
       RspecApiDocumentation.configuration.app
     end
 
-    def explanation(text)
+    def explanation(text, options={})
+      example.metadata[:escape_explanation] = options[:escape].nil? ? true : options[:escape]
       example.metadata[:explanation] = text
     end
 

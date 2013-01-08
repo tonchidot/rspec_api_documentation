@@ -38,6 +38,10 @@ module RspecApiDocumentation
       respond_to?(:parameters) && parameters.present?
     end
 
+    def escape_explanation?
+      metadata[:escape_explanation] || nil
+    end
+
     def explanation
       metadata[:explanation] || nil
     end
